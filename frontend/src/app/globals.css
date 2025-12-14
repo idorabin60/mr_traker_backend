@@ -1,0 +1,44 @@
+:root {
+  /* Core Brand Colors */
+  --bg-primary: #0B0B0B;
+  --bg-secondary: #1A1A1A;
+  --text-primary: #FFFFFF;
+  --text-secondary: #B3B3B3;
+
+  /* Brand Accents */
+  --brand-red: #FF0100;
+
+  /* Functional Colors */
+  --color-recovery-high: #00F1A0;
+  --color-recovery-med: #FFC926;
+  --color-recovery-low: #FF0100;
+  --color-sleep: #00E3C8;
+  --color-strain: #2B59C3;
+  --color-recovery-blue: #5883F8;
+
+  /* Fonts */
+  --font-primary: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Proxima Nova", Helvetica, Arial, sans-serif;
+  --font-mono: "DINPro", "Roboto Mono", monospace;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
