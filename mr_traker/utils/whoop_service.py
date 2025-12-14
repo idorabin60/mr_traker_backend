@@ -24,8 +24,7 @@ def get_valid_access_token(athlete_profile):
     # 2. Check if expired (we add a 5-minute buffer to be safe)
     now = timezone.now()
     if athlete_profile.whoop_token_expires_at and now >= (athlete_profile.whoop_token_expires_at - timedelta(minutes=5)):
-        print(
-            f"Token expired for {athlete_profile.user.username}. Refreshing...")
+        print(f"Token expired for {athlete_profile.user.username}. Refreshing...")
         return refresh_whoop_token(athlete_profile)
 
     # 3. Token is still good
@@ -55,6 +54,10 @@ def refresh_whoop_token(athlete_profile):
         athlete_profile.whoop_access_token = data['access_token']
         # Always rotate refresh tokens too
         athlete_profile.whoop_refresh_token = data['refresh_token']
+        
+        # User ID might be returned?
+        if 'user_id' in data:
+             athlete_profile.whoop_user_id = data['user_id']
 
         # Calculate new expiry (expires_in is usually seconds, e.g., 3600)
         expires_in = data.get('expires_in', 3600)
@@ -66,7 +69,9 @@ def refresh_whoop_token(athlete_profile):
         return athlete_profile.whoop_access_token
 
     except requests.exceptions.RequestException as e:
-        print(f"Failed to refresh token: {e}")
+        print(f"DEBUG: Failed to refresh token: {e}")
+        if 'response' in locals():
+             print(f"DEBUG: Refresh Error Content: {response.content}")
         # Logic to handle disconnection (maybe send email to user to re-login)
         return None
 

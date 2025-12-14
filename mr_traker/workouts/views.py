@@ -32,15 +32,24 @@ class WorkoutListView(APIView):
             return Response({"detail": "WHOOP not connected or token expired."}, status=status.HTTP_401_UNAUTHORIZED)
 
         # 3. Fetch from WHOOP API
-        # v1 endpoint: https://api.prod.whoop.com/v1/activity/workout
-        # limit is optional, default 25
-        url = "https://api.prod.whoop.com/v1/activity/workout?limit=25" 
+        # We are getting 'default backend - 404' which means the Host/Path combination is wrong.
+        # We will try a list of candidates to confirm the correct one.
+        
+        # 3. Fetch from WHOOP API
+        # Verified URL: https://api.prod.whoop.com/developer/v2/activity/workout
+        url = "https://api.prod.whoop.com/developer/v2/activity/workout?limit=25"
         headers = {"Authorization": f"Bearer {access_token}"}
         
         try:
             response = requests.get(url, headers=headers)
             response.raise_for_status()
-            workouts_data = response.json() # List of workouts
+            
+            workouts_data = response.json()
+             
+            # V2 returns a paginated response wrapper { "records": [...], "next_token": ... }
+            if isinstance(workouts_data, dict) and 'records' in workouts_data:
+                 workouts_data = workouts_data['records']
+
         except requests.exceptions.RequestException as e:
             return Response({"detail": f"Failed to fetch workouts from WHOOP: {e}"}, status=status.HTTP_502_BAD_GATEWAY)
 

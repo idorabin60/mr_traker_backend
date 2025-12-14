@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     "users",
     "medical_history",
     "workouts",
+    "recovery",
 ]
 
 MIDDLEWARE = [
