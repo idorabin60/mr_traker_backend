@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status, permissions
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
+from django.http import HttpResponse
 
 from .serializers import RegisterSerializer, UserSerializer
 from .models import User
@@ -78,11 +79,12 @@ class LoginView(APIView):
             status=status.HTTP_200_OK,
         )
 
-    class MyAthletesView(APIView):
-        """
-   GET /api/trainer/athletes/
-   Returns all athlete users that are linked to the CURRENT logged-in trainer.
-   """
+
+class MyAthletesView(APIView):
+    """
+    GET /api/trainer/athletes/
+    Returns all athlete users that are linked to the CURRENT logged-in trainer.
+    """
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
@@ -102,3 +104,87 @@ class LoginView(APIView):
 
         serializer = UserSerializer(athletes_qs, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class PrivacyPolicyView(APIView):
+    """
+    GET /api/users/privacy-policy/
+    Simple endpoint to display privacy policy.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        return HttpResponse("<h1>Privacy Policy</h1><p>This is a placeholder privacy policy for Whoop integration.</p>")
+
+
+class WhoopCallbackView(APIView):
+    """
+    GET /api/users/whoop/callback/
+    Handles the redirect from WHOOP after user authorizes the app.
+    Query Params: ?code=...&state=...
+    """
+    permission_classes = [permissions.AllowAny]  # Or IsAuthenticated if you want to link to logged-in user
+
+    def get(self, request):
+        code = request.query_params.get("code")
+        error = request.query_params.get("error")
+
+        if error:
+            return Response({"error": error}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not code:
+            return Response({"error": "No code provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Exchange code for token
+        from utils import whoop_service
+        token_data = whoop_service.exchange_oauth_code(code)
+
+        if not token_data:
+            return Response({"error": "Failed to exchange code for token"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # ------------------------------------------------------------------
+        # PROVISIONAL LOGIC: HARDCODED LINKING
+        # ------------------------------------------------------------------
+        from django.utils import timezone
+        from datetime import timedelta
+        from .models import User, AthleteProfile, TrainerProfile
+
+        # 1. Get or Create the specific user
+        try:
+            user, created = User.objects.get_or_create(
+                username="idorabin60",
+                defaults={"email": "idorabin60@example.com", "role": User.IS_ATHLETE}
+            )
+            if created:
+                user.set_password("password123") # Set a default password if created
+                user.save()
+        except Exception as e:
+             return Response({"error": f"Error getting user: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # 2. Get or Create AthleteProfile
+        athlete_profile, _ = AthleteProfile.objects.get_or_create(user=user)
+
+        # 3. Store Tokens
+        athlete_profile.whoop_user_id = token_data.get('user_id')
+        athlete_profile.whoop_access_token = token_data['access_token']
+        athlete_profile.whoop_refresh_token = token_data['refresh_token']
+        
+        expires_in = token_data.get('expires_in', 3600)
+        athlete_profile.whoop_token_expires_at = timezone.now() + timedelta(seconds=expires_in)
+        athlete_profile.save()
+
+        # 4. Link to Trainer 12345
+        trainer_linked = False
+        try:
+            trainer_profile = TrainerProfile.objects.get(pass_key="12345")
+            athlete_profile.trainers.add(trainer_profile.user)
+            trainer_linked = True
+        except TrainerProfile.DoesNotExist:
+            print("Trainer with passkey 12345 not found.")
+
+        return Response({
+            "message": "WHOOP connected and linked successfully!",
+            "linked_user": user.username,
+            "trainer_linked": trainer_linked,
+            "token_data": token_data 
+        }, status=status.HTTP_200_OK)

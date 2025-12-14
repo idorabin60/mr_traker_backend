@@ -15,6 +15,22 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Load .env file
+import os
+def load_env_file(path):
+    if os.path.exists(path):
+        with open(path) as f:
+            for line in f:
+                if line.strip() and not line.startswith('#') and '=' in line:
+                    key, value = line.strip().split('=', 1)
+                    os.environ.setdefault(key, value)
+
+load_env_file(BASE_DIR / '.env')
+
+WHOOP_CLIENT_ID = os.environ.get('WHOOP_CLIENT_ID')
+WHOOP_CLIENT_SECRET = os.environ.get('WHOOP_CLIENT_SECRET')
+WHOOP_REDIRECT_URI = os.environ.get('WHOOP_REDIRECT_URI', 'http://127.0.0.1:8000/api/users/whoop/callback/')
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -41,8 +57,8 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework.authtoken",
     "users",
-
-
+    "medical_history",
+    "workouts",
 ]
 
 MIDDLEWARE = [

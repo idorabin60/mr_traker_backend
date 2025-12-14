@@ -7,7 +7,8 @@ from django.conf import settings  # Assuming you store client ID/Secret here
 WHOOP_CLIENT_ID = getattr(settings, 'WHOOP_CLIENT_ID', 'your_client_id')
 WHOOP_CLIENT_SECRET = getattr(
     settings, 'WHOOP_CLIENT_SECRET', 'your_client_secret')
-WHOOP_TOKEN_URL = "https://api.prod.whoop.com/oauth/token"
+WHOOP_TOKEN_URL = "https://api.prod.whoop.com/oauth/oauth2/token"
+WHOOP_REDIRECT_URI = getattr(settings, 'WHOOP_REDIRECT_URI', 'http://127.0.0.1:8000/api/users/whoop/callback/')
 
 
 def get_valid_access_token(athlete_profile):
@@ -67,4 +68,28 @@ def refresh_whoop_token(athlete_profile):
     except requests.exceptions.RequestException as e:
         print(f"Failed to refresh token: {e}")
         # Logic to handle disconnection (maybe send email to user to re-login)
+        return None
+
+
+def exchange_oauth_code(code):
+    """
+    Exchanges the temporary authorization code for an access token and refresh token.
+    """
+    payload = {
+        'grant_type': 'authorization_code',
+        'code': code,
+        'client_id': WHOOP_CLIENT_ID,
+        'client_secret': WHOOP_CLIENT_SECRET,
+        'redirect_uri': WHOOP_REDIRECT_URI,
+        # 'scope': ... # Scope is usually defined in the initial authorization request
+    }
+
+    try:
+        response = requests.post(WHOOP_TOKEN_URL, data=payload)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Failed to exchange code: {e}")
+        if response is not None:
+             print(f"Response content: {response.content}")
         return None

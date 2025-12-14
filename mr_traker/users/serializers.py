@@ -68,7 +68,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("username", "email", "password", "role", "organization_name")
+        fields = ("username", "email", "password", "role", "organization_name", "trainer_pass_key")
 
     def validate_role(self, value):
         if value not in (User.IS_TRAINER, User.IS_ATHLETE):
