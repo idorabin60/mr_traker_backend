@@ -17,16 +17,38 @@ export default function AuthPage() {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const formData = {
-            userType,
-            username,
-            password,
-            ...(userType === 'athlete' ? { trainerPasskey } : { organization }),
-            ...(!isLogin ? { email } : {})
-        };
 
-        console.log(`Submitting ${isLogin ? 'Login' : 'Signup'} for ${userType}:`, formData);
-        alert("Form Submitted (Console Log Only)");
+        console.log(`Processing ${isLogin ? 'Login' : 'Signup'} for ${userType}`);
+
+        if (isLogin) {
+            // LOGIN FLOW
+            if (userType === 'athlete') {
+                // TODO: Call Athlete Login API
+                // Endpoint: /api/auth/athlete/login
+                // On Success: Redirect to /dashboard/athlete
+                console.log("Calling Athlete Login API...");
+            } else {
+                // TODO: Call Trainer Login API
+                // Endpoint: /api/auth/trainer/login
+                // On Success: Redirect to /dashboard/trainer
+                console.log("Calling Trainer Login API...");
+            }
+        } else {
+            // SIGNUP FLOW
+            if (userType === 'athlete') {
+                // TODO: Call Athlete Signup API
+                // Payload must include: username, password, email, trainerPasskey
+                // Endpoint: /api/auth/athlete/signup
+                // On Success: Redirect to /dashboard/athlete or /onboarding
+                console.log("Calling Athlete Signup API...", { username, email, trainerPasskey });
+            } else {
+                // TODO: Call Trainer Signup API
+                // Payload must include: username, password, email, organization
+                // Endpoint: /api/auth/trainer/signup
+                // On Success: Redirect to /dashboard/trainer
+                console.log("Calling Trainer Signup API...", { username, email, organization });
+            }
+        }
     };
 
     return (

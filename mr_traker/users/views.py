@@ -126,6 +126,7 @@ class WhoopCallbackView(APIView):
     permission_classes = [permissions.AllowAny]  # Or IsAuthenticated if you want to link to logged-in user
 
     def get(self, request):
+        print(request)
         code = request.query_params.get("code")
         error = request.query_params.get("error")
 
@@ -138,6 +139,8 @@ class WhoopCallbackView(APIView):
         # Exchange code for token
         from utils import whoop_service
         token_data = whoop_service.exchange_oauth_code(code)
+        print("LOOK HERE IDO:")
+        print(token_data)
 
         if not token_data:
             return Response({"error": "Failed to exchange code for token"}, status=status.HTTP_400_BAD_REQUEST)

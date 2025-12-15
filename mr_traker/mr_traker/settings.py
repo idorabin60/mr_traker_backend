@@ -60,6 +60,9 @@ INSTALLED_APPS = [
     "medical_history",
     "workouts",
     "recovery",
+    "ai_pipelines",
+    "sleep",
+    "cycles",
 ]
 
 MIDDLEWARE = [
