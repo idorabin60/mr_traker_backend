@@ -76,6 +76,7 @@ class WorkoutListView(APIView):
                     'distance_meter': score.get('distance_meter'),
                     'altitude_gain_meter': score.get('altitude_gain_meter'),
                     'altitude_change_meter': score.get('altitude_change_meter'),
+                    'is_cutting_weight': profile.is_weight_cutting,
                 }
             )
             synced_workouts.append(workout)

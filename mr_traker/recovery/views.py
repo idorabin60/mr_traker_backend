@@ -68,6 +68,7 @@ class RecoveryListView(APIView):
                     'skin_temp_celsius': score.get('skin_temp_celsius'),
                     'created_at': parse_datetime(item['created_at']),
                     'updated_at': parse_datetime(item['updated_at']),
+                    'is_cutting_weight': profile.is_weight_cutting,
                 }
             )
             synced_recoveries.append(recovery)

@@ -55,8 +55,10 @@ class AthleteProfile(models.Model):
         related_name='athletes',
         limit_choices_to={'role': User.IS_TRAINER},
     )
+    #is werll conditopnd
 
     # What fields do i need to add here? : ask geminai
+    is_weight_cutting = models.BooleanField(default=False)
     whoop_user_id = models.CharField(max_length=50, blank=True, null=True)
 
     # The short-lived key (valid for 1 hour)

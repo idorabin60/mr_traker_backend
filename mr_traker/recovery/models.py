@@ -15,6 +15,8 @@ class Recovery(models.Model):
     spo2_percentage = models.FloatField(blank=True, null=True)
     skin_temp_celsius = models.FloatField(blank=True, null=True)
     
+    is_cutting_weight = models.BooleanField(default=False)
+    
     created_at = models.DateTimeField() # From WHOOP API
     updated_at = models.DateTimeField() # From WHOOP API
 
