@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import RegisterView, LoginView, MyAthletesView, PrivacyPolicyView, WhoopCallbackView
+from .views import RegisterView, LoginView, MyAthletesView, PrivacyPolicyView, WhoopCallbackView, WhoopWebhookView
 
 urlpatterns = [
     path('auth/register/', RegisterView.as_view(), name='register'),
@@ -9,4 +9,5 @@ urlpatterns = [
     # WHOOP Integration
     path('privacy-policy/', PrivacyPolicyView.as_view(), name='privacy-policy'),
     path('whoop/callback/', WhoopCallbackView.as_view(), name='whoop-callback'),
+    path('whoop/webhook/', WhoopWebhookView.as_view(), name='whoop-webhook'),
 ]

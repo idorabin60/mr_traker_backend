@@ -76,3 +76,27 @@ class SleepListView(APIView):
         # API usually returns newest first.
         serializer = SleepSerializer(synced_sleeps, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class LatestSleepView(APIView):
+    """
+    GET /api/sleep/latest/
+    Returns the single latest sleep record for the user (by end time) from the local DB.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        if not hasattr(user, 'athlete_profile'):
+             return Response({"detail": "User is not an athlete."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        profile = user.athlete_profile
+
+        # Get the sleep with the latest 'end' time
+        latest_sleep = Sleep.objects.filter(athlete=profile).order_by('-end').first()
+
+        if not latest_sleep:
+            return Response({"detail": "No sleep data found."}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = SleepSerializer(latest_sleep)
+        return Response(serializer.data, status=status.HTTP_200_OK)
