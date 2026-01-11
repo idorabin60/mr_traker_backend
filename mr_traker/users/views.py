@@ -156,7 +156,7 @@ class WhoopCallbackView(APIView):
         # 1. Get or Create the specific user
         try:
             user, created = User.objects.get_or_create(
-                username="idorabin60",
+                username="idorabin",
                 defaults={"email": "idorabin60@example.com", "role": User.IS_ATHLETE}
             )
             if created:

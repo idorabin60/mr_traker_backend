@@ -11,10 +11,16 @@ WHOOP_TOKEN_URL = "https://api.prod.whoop.com/oauth/oauth2/token"
 WHOOP_REDIRECT_URI = getattr(settings, 'WHOOP_REDIRECT_URI', 'http://127.0.0.1:8000/api/users/whoop/callback/')
 
 
+import threading
+
+# Lock to prevent race conditions during token refresh
+_token_refresh_lock = threading.Lock()
+
 def get_valid_access_token(athlete_profile):
     """
     Returns a valid access token. 
     Refreshes it automatically if it has expired.
+    Thread-safe implementation.
     """
 
     # 1. Check if token exists
@@ -24,10 +30,21 @@ def get_valid_access_token(athlete_profile):
     # 2. Check if expired (we add a 5-minute buffer to be safe)
     now = timezone.now()
     if athlete_profile.whoop_token_expires_at and now >= (athlete_profile.whoop_token_expires_at - timedelta(minutes=5)):
-        print(f"Token expired for {athlete_profile.user.username}. Refreshing...")
-        return refresh_whoop_token(athlete_profile)
+        
+        # Acquire lock to ensure only one thread refreshes
+        with _token_refresh_lock:
+            # 3. Double-check locking: Check AGAIN inside the lock
+            # Another thread might have refreshed it while we were waiting
+            athlete_profile.refresh_from_db() # Get latest data from DB
+            
+            if athlete_profile.whoop_token_expires_at and now >= (athlete_profile.whoop_token_expires_at - timedelta(minutes=5)):
+                 print(f"Token expired for {athlete_profile.user.username}. Refreshing (Thread Safe)...")
+                 return refresh_whoop_token(athlete_profile)
+            else:
+                 print(f"Token for {athlete_profile.user.username} was already refreshed by another thread.")
+                 return athlete_profile.whoop_access_token
 
-    # 3. Token is still good
+    # 4. Token is still good
     return athlete_profile.whoop_access_token
 
 
