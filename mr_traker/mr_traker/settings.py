@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     "ai_pipelines",
     "sleep",
     "cycles",
+    "daily",
 ]
 
 MIDDLEWARE = [

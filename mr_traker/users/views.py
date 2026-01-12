@@ -413,6 +413,30 @@ class WhoopWebhookView(APIView):
                             'is_cutting_weight': profile.is_weight_cutting,
                         }
                     )
+
+                    # --- ALSO SYNC CYCLE ---
+                    # Since recovery is ready, the cycle is complete.
+                    from cycles.models import Cycle
+                    cycle_data = whoop_service.get_cycle_by_id(access_token, resolved_cycle_id)
+                    if cycle_data:
+                        print(f"Syncing cycle {resolved_cycle_id} via webhook")
+                        c_score = cycle_data.get('score', {})
+                        Cycle.objects.update_or_create(
+                            whoop_id=cycle_data['id'],
+                            defaults={
+                                'athlete': profile,
+                                'whoop_user_id': cycle_data['user_id'],
+                                'created_at': parse_datetime(cycle_data['created_at']),
+                                'updated_at': parse_datetime(cycle_data['updated_at']),
+                                'start': parse_datetime(cycle_data['start']),
+                                'end': parse_datetime(cycle_data['end']) if cycle_data.get('end') else None,
+                                'timezone_offset': cycle_data['timezone_offset'],
+                                'score_state': cycle_data['score_state'],
+                                'score': c_score,
+                            }
+                        )
+                    else:
+                        print(f"Failed to fetch cycle {resolved_cycle_id} in webhook")
                 else:
                     print(f"Failed to fetch recovery data for cycle {resolved_cycle_id}")
             else:

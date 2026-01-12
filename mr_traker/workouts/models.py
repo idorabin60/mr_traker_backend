@@ -3,6 +3,7 @@ from users.models import AthleteProfile
 
 class Workout(models.Model):
     athlete = models.ForeignKey(AthleteProfile, on_delete=models.CASCADE, related_name='workouts')
+    day = models.ForeignKey('daily.Day', on_delete=models.SET_NULL, null=True, blank=True, related_name='workouts')
     whoop_id = models.CharField(max_length=50, unique=True)
     start = models.DateTimeField()
     end = models.DateTimeField()

@@ -59,6 +59,9 @@ class AthleteProfile(models.Model):
 
     # What fields do i need to add here? : ask geminai
     is_weight_cutting = models.BooleanField(default=False)
+    is_preparing_for_competition = models.BooleanField(default=False)
+    is_in_training_camp = models.BooleanField(default=False)
+
     whoop_user_id = models.CharField(max_length=50, blank=True, null=True)
 
     # The short-lived key (valid for 1 hour)

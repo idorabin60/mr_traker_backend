@@ -24,4 +24,5 @@ urlpatterns = [
     path("api/workouts/", include("workouts.urls")),
     path("api/recovery/", include("recovery.urls")),
     path("api/sleep/", include("sleep.urls")),
+    path("api/cycles/", include("cycles.urls")),
 ]

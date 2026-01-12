@@ -224,3 +224,23 @@ def get_recovery_by_cycle_id(access_token, cycle_id):
         if 'response' in locals():
              print(f"Response content: {response.content}")
         return None
+
+def get_cycle_by_id(access_token, cycle_id):
+    """
+    Fetches a single cycle by ID.
+    Using V1 API.
+    """
+    url = f"https://api.prod.whoop.com/developer/v1/cycle/{cycle_id}"
+    headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
+
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Failed to get cycle {cycle_id}: {e}")
+        if 'response' in locals():
+             print(f"Response content: {response.content}")
+        return None
