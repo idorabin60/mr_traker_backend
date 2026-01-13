@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "rest_framework.authtoken",
+    "corsheaders", # Added
     "users",
     "medical_history",
     "workouts",
@@ -67,6 +68,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware", # Added - must be at top
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -116,7 +118,7 @@ DATABASES = {
     "supabase": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": os.getenv("SUPABASE_DB_NAME", "postgres"),
-        "USER": os.getenv("SUPABASE_DB_USER", "postgres"),
+        "USER": "postgres.sbkfqwlukbeohbmmsjbb",  # <-- IMPORTANT
         "PASSWORD": os.getenv("SUPABASE_DB_PASSWORD"),
         "HOST": os.getenv("SUPABASE_DB_HOST"),   # e.g. db.xxxxx.supabase.co
         "PORT": os.getenv("SUPABASE_DB_PORT", "5432"),
@@ -128,7 +130,7 @@ DATABASES = {
 }
 
 # Use sqlite as default during migration steps (then flip later)
-DATABASES["default"] = DATABASES["sqlite"]
+DATABASES["default"] = DATABASES["supabase"]
 
 
 # Password validation
@@ -171,3 +173,12 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# CORS SETTINGS
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8080",
+    "http://localhost:5173",
+    "http://127.0.0.1:8080",
+    "http://127.0.0.1:5173",
+]
+CORS_ALLOW_CREDENTIALS = True

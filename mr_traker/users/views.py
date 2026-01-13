@@ -156,8 +156,8 @@ class WhoopCallbackView(APIView):
         # 1. Get or Create the specific user
         try:
             user, created = User.objects.get_or_create(
-                username="idorabin",
-                defaults={"email": "idorabin60@example.com", "role": User.IS_ATHLETE}
+                username="OmerMiyara",
+                defaults={"email": "idorabin60@gmail.com", "role": User.IS_ATHLETE}
             )
             if created:
                 user.set_password("password123") # Set a default password if created

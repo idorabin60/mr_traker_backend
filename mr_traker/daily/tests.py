@@ -1,9 +1,12 @@
 from django.test import TestCase
-from users.models import User, AthleteProfile
-from daily.models import Day
-from workouts.models import Workout
-from datetime import date, datetime
 from django.utils import timezone
+from datetime import timedelta, date
+from users.models import User, AthleteProfile
+from recovery.models import Recovery
+from sleep.models import Sleep
+from workouts.models import Workout
+from daily.models import Day
+from daily.services import create_day_summary
 
 class DayModelTest(TestCase):
     def setUp(self):
@@ -55,3 +58,66 @@ class DayModelTest(TestCase):
         # 3. Refresh workout and check link
         workout.refresh_from_db()
         self.assertEqual(workout.day, day)
+
+class DayServiceTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='testservice', password='password')
+        self.profile = AthleteProfile.objects.create(
+            user=self.user,
+            is_weight_cutting=True,
+            is_preparing_for_competition=False,
+            is_in_training_camp=True
+        )
+        self.today = timezone.now().date()
+        self.today_datetime = timezone.now()
+
+    def test_create_day_summary_aggregates_correctly(self):
+        # 1. Create Data
+        # Recovery
+        Recovery.objects.create(
+            athlete=self.profile,
+            cycle_id=101,
+            score_state='SCORED',
+            recovery_score=85,
+            created_at=self.today_datetime,
+            updated_at=self.today_datetime
+        )
+        # Sleep
+        Sleep.objects.create(
+            athlete=self.profile,
+            whoop_id='sleep1',
+            whoop_user_id=123,
+            cycle_id=101,
+            created_at=self.today_datetime,
+            updated_at=self.today_datetime,
+            start=self.today_datetime - timedelta(hours=8),
+            end=self.today_datetime, # Ends today
+            timezone_offset='+00:00',
+            score_state='SCORED',
+            score={'sleep_efficiency_percentage': 92.5}
+        )
+        # Workout
+        w = Workout.objects.create(
+            athlete=self.profile,
+            whoop_id='workout1',
+            start=self.today_datetime, # Starts today
+            end=self.today_datetime + timedelta(hours=1)
+        )
+
+        # 2. Call Service
+        day = create_day_summary(self.profile, self.today)
+
+        # 3. Assertions
+        self.assertEqual(day.athlete, self.profile)
+        self.assertEqual(day.date, self.today)
+        self.assertEqual(day.recovery_score, 85)
+        self.assertEqual(day.sleep_efficient_score, 92) # Int conversion
+        
+        # Flags
+        self.assertTrue(day.is_cutting_weight)
+        self.assertFalse(day.is_preparing_for_competition)
+        self.assertTrue(day.is_in_training_camp)
+
+        # Signal Linking Check
+        w.refresh_from_db()
+        self.assertEqual(w.day, day)
