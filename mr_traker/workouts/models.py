@@ -22,6 +22,9 @@ class Workout(models.Model):
     altitude_change_meter = models.FloatField(blank=True, null=True)
     
     is_cutting_weight = models.BooleanField(default=False)
+
+    trainer_notes = models.TextField(blank=True, null=True)
+    athlete_notes = models.TextField(blank=True, null=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -109,11 +109,26 @@ WSGI_APPLICATION = "mr_traker.wsgi.application"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    "default": {
+    "sqlite": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
-    }
+    },
+    "supabase": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.getenv("SUPABASE_DB_NAME", "postgres"),
+        "USER": os.getenv("SUPABASE_DB_USER", "postgres"),
+        "PASSWORD": os.getenv("SUPABASE_DB_PASSWORD"),
+        "HOST": os.getenv("SUPABASE_DB_HOST"),   # e.g. db.xxxxx.supabase.co
+        "PORT": os.getenv("SUPABASE_DB_PORT", "5432"),
+        "CONN_MAX_AGE": 60,
+        "OPTIONS": {
+            "sslmode": "require",
+        },
+    },
 }
+
+# Use sqlite as default during migration steps (then flip later)
+DATABASES["default"] = DATABASES["sqlite"]
 
 
 # Password validation
