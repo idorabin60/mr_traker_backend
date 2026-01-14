@@ -104,6 +104,20 @@ class DayServiceTests(TestCase):
             end=self.today_datetime + timedelta(hours=1)
         )
 
+        # Cycle (for Strain)
+        from cycles.models import Cycle
+        Cycle.objects.create(
+            athlete=self.profile,
+            whoop_id=101,
+            whoop_user_id=123,
+            created_at=self.today_datetime,
+            updated_at=self.today_datetime,
+            start=self.today_datetime,
+            timezone_offset='+00:00',
+            score_state='SCORED',
+            score={'strain': 14.5}
+        )
+
         # 2. Call Service
         day = create_day_summary(self.profile, self.today)
 
@@ -112,6 +126,7 @@ class DayServiceTests(TestCase):
         self.assertEqual(day.date, self.today)
         self.assertEqual(day.recovery_score, 85)
         self.assertEqual(day.sleep_efficient_score, 92) # Int conversion
+        self.assertEqual(day.strain_score, 14.5)
         
         # Flags
         self.assertTrue(day.is_cutting_weight)

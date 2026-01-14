@@ -112,3 +112,33 @@ class RegisterSerializer(serializers.ModelSerializer):
                 athlete_profile.trainers.add(trainer_profile.user)
 
         return user
+
+
+# Dashboard Serializers
+from daily.serializers import DaySerializer
+from workouts.serializers import WorkoutSerializer
+
+class DashboardAthleteSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username')
+    email = serializers.CharField(source='user.email')
+    latest_day = DaySerializer(read_only=True)
+
+    class Meta:
+        model = AthleteProfile
+        fields = (
+            'id',
+            'username', 
+            'email', 
+            'latest_day',
+            'is_weight_cutting',
+            'is_preparing_for_competition',
+            'is_in_training_camp'
+        )
+
+class AthleteDetailSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    username = serializers.CharField()
+    email = serializers.CharField()
+    today_summary = DaySerializer(read_only=True)
+    workouts = WorkoutSerializer(many=True, read_only=True)
+    trends = DaySerializer(many=True, read_only=True)

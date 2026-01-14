@@ -4,11 +4,13 @@ from rest_framework import status, permissions
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
 from django.http import HttpResponse
+from django.db.models import OuterRef, Subquery
 from utils import whoop_service
+from daily.models import Day
 
 
-from .serializers import RegisterSerializer, UserSerializer
-from .models import User
+from .serializers import RegisterSerializer, UserSerializer, DashboardAthleteSerializer
+from .models import User, AthleteProfile
 
 
 class RegisterView(APIView):
@@ -99,12 +101,102 @@ class MyAthletesView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        # Get all Users that have an AthleteProfile and are linked to this trainer
-        athletes_qs = User.objects.filter(
-            athlete_profile__trainers=trainer
-        ).select_related("athlete_profile")
+        # Get athletes linked to this trainer using AthleteProfile model
+        # Optimization: We need the profile, user, and LATEST day stats.
+        latest_day_subquery = Day.objects.filter(
+            athlete=OuterRef('pk')
+        ).order_by('-date').values('id')[:1]
 
-        serializer = UserSerializer(athletes_qs, many=True)
+        athletes = AthleteProfile.objects.filter(
+            trainers=trainer
+        ).select_related('user').annotate(
+            latest_day_id=Subquery(latest_day_subquery)
+        )
+        
+        # Manually attach Day objects
+        day_ids = [a.latest_day_id for a in athletes if a.latest_day_id]
+        days = Day.objects.filter(id__in=day_ids)
+        day_map = {d.id: d for d in days}
+        
+        for athlete in athletes:
+            athlete.latest_day = day_map.get(athlete.latest_day_id)
+
+
+        serializer = DashboardAthleteSerializer(athletes, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class AthleteDetailView(APIView):
+    """
+    GET /api/users/trainer/athletes/<int:pk>/?date=YYYY-MM-DD
+    Returns detailed data for a specific athlete on a specific date.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        trainer = request.user
+        if trainer.role != User.IS_TRAINER:
+             return Response({"detail": "Only trainers allowed."}, status=status.HTTP_403_FORBIDDEN)
+
+        # 1. Fetch Athlete & Verify Access
+        try:
+            athlete_profile = AthleteProfile.objects.get(pk=pk, trainers=trainer)
+        except AthleteProfile.DoesNotExist:
+            return Response({"detail": "Athlete not found or not linked to you."}, status=status.HTTP_404_NOT_FOUND)
+
+        # 2. Parse Date
+        date_str = request.query_params.get('date')
+        if date_str:
+            from django.utils.dateparse import parse_date
+            import datetime
+            target_date = parse_date(date_str)
+            if not target_date:
+                return Response({"detail": "Invalid date format. Use YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            from django.utils import timezone
+            target_date = timezone.now().date()
+
+        # 3. Fetch "Today's" Data (Day object)
+        # Note: If no day exists for this date, DaySerializer will handle None gracefully or we pass None
+        today_summary = Day.objects.filter(athlete=athlete_profile, date=target_date).first()
+        
+        # If no day summary exists, we might want to try creating one on the fly? 
+        # For now, let's just return what we have. API consumers should handle nulls.
+        if not today_summary:
+            # Optional: Try to create it if it's today? 
+            # modifying state in a GET request is generally bad practice but acceptable for lazy-loading cache-like data.
+            # Let's stick to reading.
+            pass
+
+        # 4. Fetch Workouts
+        # Workouts that started on this date
+        from workouts.models import Workout
+        workouts = Workout.objects.filter(
+            athlete=athlete_profile,
+            start__date=target_date
+        ).order_by('start')
+
+        # 5. Fetch Trends (Last 7 days relative to target_date)
+        # range: [target_date - 6 days, target_date] (inclusive of end date)
+        from datetime import timedelta
+        start_date = target_date - timedelta(days=6)
+        trends = Day.objects.filter(
+            athlete=athlete_profile,
+            date__range=[start_date, target_date]
+        ).order_by('date')
+        
+        # 6. Construct Response
+        response_data = {
+            "id": athlete_profile.id,
+            "username": athlete_profile.user.username,
+            "email": athlete_profile.user.email,
+            "today_summary": today_summary,
+            "workouts": workouts,
+            "trends": trends
+        }
+
+        from .serializers import AthleteDetailSerializer
+        serializer = AthleteDetailSerializer(response_data)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 

@@ -2,6 +2,7 @@ from django.utils import timezone
 from .models import Day
 from recovery.models import Recovery
 from sleep.models import Sleep
+from cycles.models import Cycle
 
 def create_day_summary(athlete_profile, date=None):
     """
@@ -14,8 +15,6 @@ def create_day_summary(athlete_profile, date=None):
     # 1. Fetch Recovery Data
     # Recovery for a day is usually associated with the sleep ending on that day.
     # We look for a recovery record created on this date.
-    # Note: Adjust logic if Recovery.created_at isn't the best field, 
-    # but typically 'recovery' is generated in the morning of 'date'.
     recovery_qs = Recovery.objects.filter(
         athlete=athlete_profile,
         created_at__date=date
@@ -26,7 +25,6 @@ def create_day_summary(athlete_profile, date=None):
 
     # 2. Fetch Sleep Data
     # Sleep ending on 'date' is usually the sleep for that 'day'.
-    # e.g., Sleep ending 2024-01-01 07:00 AM belongs to Day 2024-01-01.
     sleep_qs = Sleep.objects.filter(
         athlete=athlete_profile,
         end__date=date
@@ -42,16 +40,27 @@ def create_day_summary(athlete_profile, date=None):
         if sleep_efficient_score is not None:
              sleep_efficient_score = int(float(sleep_efficient_score))
 
-    # 3. Create or Update Day
+    # 3. Fetch Cycle Data (for Strain)
+    # Cycle represents the day's strain load.
+    cycle_qs = Cycle.objects.filter(
+        athlete=athlete_profile,
+        start__date=date
+    ).order_by('-start')
+
+    cycle_obj = cycle_qs.first()
+    strain_score = None
+    if cycle_obj and cycle_obj.score:
+        strain_score = cycle_obj.score.get('strain')
+
+
+    # 4. Create or Update Day
     day, created = Day.objects.update_or_create(
         athlete=athlete_profile,
         date=date,
         defaults={
             'recovery_score': recovery_score,
             'sleep_efficient_score': sleep_efficient_score,
-            # 'strain_score': ??? (Not specified in source, maybe calculated from workouts?)
-            
-            # Flags from Profile
+            'strain_score': strain_score,
             'is_cutting_weight': athlete_profile.is_weight_cutting,
             'is_preparing_for_competition': athlete_profile.is_preparing_for_competition,
             'is_in_training_camp': athlete_profile.is_in_training_camp,
